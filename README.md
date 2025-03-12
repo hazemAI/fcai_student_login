@@ -9,6 +9,7 @@ A cross-platform Flutter application for student login and profile management, d
 - Cross-platform support (Windows and Android)
 - Persistent data storage using Hive
 - Camera and gallery integration for profile photos
+- Secure local data storage
 
 ## Technologies Used
 
