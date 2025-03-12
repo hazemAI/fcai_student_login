@@ -43,7 +43,7 @@ A cross-platform Flutter application for student login and profile management, d
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/fcai_student_login.git
+   git clone https://github.com/hazemAI/fcai_student_login.git
    ```
 
 2. Navigate to the project directory:
