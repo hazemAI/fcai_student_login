@@ -29,9 +29,14 @@ class Validators {
     if (value == null || value.isEmpty) {
       return 'Please enter your student ID';
     }
-    if (!RegExp(r'^\d+$').hasMatch(value)) {
-      return 'Student ID must contain only numbers';
+    
+    // Check if the student ID follows the pattern 20XX[0-1]XXX
+    // where X is a number from 0-9
+    final studentIdRegex = RegExp(r'^20\d{2}[0-1]\d{3}$');
+    if (!studentIdRegex.hasMatch(value)) {
+      return 'ID must follow the pattern 20XX[0-1]XXX where X is a digit';
     }
+    
     return null;
   }
 
