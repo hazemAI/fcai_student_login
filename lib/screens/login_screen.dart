@@ -3,6 +3,7 @@ import 'package:fcai_student_login/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fcai_student_login/providers/user_provider.dart';
+import '../components/index.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -47,13 +48,10 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextFormField(
+              CustomTextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
-                ),
+                labelText: 'Email',
+                prefixIcon: Icons.email,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
@@ -62,22 +60,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: 16.0),
-              TextFormField(
+              
+              CustomPasswordField(
                 controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      userProvider.isPasswordVisible
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
-                    onPressed: () => userProvider.togglePasswordVisibility(),
-                  ),
-                ),
-                obscureText: !userProvider.isPasswordVisible,
+                labelText: 'Password',
+                isVisible: userProvider.isPasswordVisible,
+                toggleVisibility: () => userProvider.togglePasswordVisibility(),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
@@ -86,43 +74,39 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: 24.0),
+              
               if (userProvider.errorMessage.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Text(
-                    userProvider.errorMessage,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-              ElevatedButton(
-                onPressed: userProvider.isLoading
-                    ? null
-                    : () async {
-                        if (_formKey.currentState!.validate()) {
-                          final success = await userProvider.login(
-                            _emailController.text,
-                            _passwordController.text,
-                            context,
-                          );
-                          
-                          if (success && mounted) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ProfileScreen(),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                child: userProvider.isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Login'),
+                ErrorText(errorMessage: userProvider.errorMessage),
+              
+              CustomButton(
+                width: double.infinity,
+                text: 'Login',
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    final success = await userProvider.login(
+                      _emailController.text,
+                      _passwordController.text,
+                      context,
+                    );
+                    
+                    if (success && mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    }
+                  }
+                },
+                isLoading: userProvider.isLoading,
               ),
+              
               const SizedBox(height: 16.0),
+              
               TextButton(
                 onPressed: () {
-                  Navigator.push(
+                  Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const SignupScreen(),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../providers/user_provider.dart';
 import '../utils/validators.dart';
+import '../components/index.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
@@ -120,69 +121,43 @@ class _SignupScreenState extends State<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextFormField(
+                  CustomTextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
-                    ),
+                    labelText: 'Full Name',
+                    prefixIcon: Icons.person,
                     validator: Validators.validateName,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16.0),
 
                   // Gender selection (optional)
-                  const Text(
-                    'Gender (Optional)',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('Male'),
-                          value: 'Male',
-                          groupValue: userProvider.gender,
-                          onChanged: (value) => userProvider.setGender(value),
-                        ),
-                      ),
-                      Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('Female'),
-                          value: 'Female',
-                          groupValue: userProvider.gender,
-                          onChanged: (value) => userProvider.setGender(value),
-                        ),
-                      ),
-                    ],
+                  CustomRadioGroup<String>(
+                    title: 'Gender',
+                    groupValue: userProvider.gender,
+                    options: const {'Male': 'Male', 'Female': 'Female'},
+                    onChanged: (value) => userProvider.setGender(value),
+                    isOptional: true,
                   ),
                   const SizedBox(height: 16.0),
 
-                  TextFormField(
+                  CustomTextFormField(
                     controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(),
-                      hintText: 'studentID@stud.fci-cu.edu.eg',
-                      helperText: 'Student ID must match the part before @',
-                    ),
+                    labelText: 'Email',
+                    prefixIcon: Icons.email,
+                    hintText: 'studentID@stud.fci-cu.edu.eg',
+                    helperText: 'Student ID must match the part before @',
                     validator: Validators.validateEmail,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16.0),
 
-                  TextFormField(
+                  CustomTextFormField(
                     controller: _studentIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Student ID',
-                      prefixIcon: Icon(Icons.badge),
-                      border: OutlineInputBorder(),
-                      hintText: 'Must match ID in email',
-                      helperText: 'Must match the part before @ in your email',
-                    ),
+                    labelText: 'Student ID',
+                    prefixIcon: Icons.badge,
+                    hintText: 'Must match ID in email',
+                    helperText: 'Must match the part before @ in your email',
                     validator: Validators.validateStudentId,
                     keyboardType: TextInputType.number,
                     textInputAction: TextInputAction.next,
@@ -190,97 +165,52 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 16.0),
 
                   // Level selection (optional)
-                  DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
-                      labelText: 'Level (Optional)',
-                      prefixIcon: Icon(Icons.school),
-                      border: OutlineInputBorder(),
-                    ),
+                  CustomDropdown<int>(
+                    labelText: 'Level (Optional)',
+                    prefixIcon: Icons.school,
                     value: userProvider.level,
-                    hint: const Text('Select your level'),
-                    items:
-                        [1, 2, 3, 4].map((level) {
-                          return DropdownMenuItem<int>(
-                            value: level,
-                            child: Text('Level $level'),
-                          );
-                        }).toList(),
+                    hintText: 'Select your level',
+                    items: [1, 2, 3, 4].map((level) {
+                      return DropdownMenuItem<int>(
+                        value: level,
+                        child: Text('Level $level'),
+                      );
+                    }).toList(),
                     onChanged: (value) => userProvider.setLevel(value),
                   ),
                   const SizedBox(height: 16.0),
 
-                  TextFormField(
+                  CustomPasswordField(
                     controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock),
-                      border: const OutlineInputBorder(),
-                      hintText: 'At least 8 characters with 1 number',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          userProvider.isPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed:
-                            () => userProvider.togglePasswordVisibility(),
-                      ),
-                    ),
-                    obscureText: !userProvider.isPasswordVisible,
+                    labelText: 'Password',
+                    hintText: 'At least 8 characters with 1 number',
+                    isVisible: userProvider.isPasswordVisible,
+                    toggleVisibility: () => userProvider.togglePasswordVisibility(),
                     validator: Validators.validatePassword,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16.0),
 
-                  TextFormField(
+                  CustomPasswordField(
                     controller: _confirmPasswordController,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          userProvider.isConfirmPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed:
-                            () =>
-                                userProvider.toggleConfirmPasswordVisibility(),
-                      ),
+                    labelText: 'Confirm Password',
+                    isVisible: userProvider.isConfirmPasswordVisible,
+                    toggleVisibility: () => userProvider.toggleConfirmPasswordVisibility(),
+                    validator: (value) => Validators.validateConfirmPassword(
+                      value,
+                      _passwordController.text,
                     ),
-                    obscureText: !userProvider.isConfirmPasswordVisible,
-                    validator:
-                        (value) => Validators.validateConfirmPassword(
-                          value,
-                          _passwordController.text,
-                        ),
                     textInputAction: TextInputAction.done,
                   ),
                   const SizedBox(height: 24.0),
 
                   if (userProvider.errorMessage.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Text(
-                        userProvider.errorMessage,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                    ErrorText(errorMessage: userProvider.errorMessage),
 
-                  ElevatedButton(
-                    onPressed: isLoading ? null : () => _signup(userProvider),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    ),
-                    child:
-                        isLoading
-                            ? const CircularProgressIndicator()
-                            : const Text(
-                              'Sign Up',
-                              style: TextStyle(fontSize: 16.0),
-                            ),
+                  CustomButton(
+                    text: 'Sign Up',
+                    onPressed: () => _signup(userProvider),
+                    isLoading: isLoading,
                   ),
 
                   const SizedBox(height: 16.0),
