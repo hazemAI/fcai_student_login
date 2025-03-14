@@ -1,23 +1,29 @@
+import 'package:fcai_student_login/screens/profile_screen.dart';
+import 'package:fcai_student_login/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/user_provider.dart';
-import '../utils/validators.dart';
-import 'signup_screen.dart';
-import 'profile_screen.dart';
+import 'package:fcai_student_login/providers/user_provider.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({Key? key}) : super(key: key);
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Reset provider state when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<UserProvider>(context, listen: false).resetState();
+    });
+  }
 
   @override
   void dispose() {
@@ -26,120 +32,106 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = '';
-      });
-
-      try {
-        final success = await Provider.of<UserProvider>(context, listen: false)
-            .login(_emailController.text, _passwordController.text);
-
-        if (success) {
-          if (!mounted) return;
-          
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login successful'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          
-          // Navigate to profile screen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const ProfileScreen()),
-          );
-        } else {
-          setState(() {
-            _errorMessage = 'Invalid email or password';
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'An error occurred: $e';
-        });
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: const Text('FCAI Student Login'),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(
-                  Icons.account_circle,
-                  size: 100,
-                  color: Colors.blue,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16.0),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.lock),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      userProvider.isPasswordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () => userProvider.togglePasswordVisibility(),
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.validateEmail,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  validator: Validators.validatePassword,
-                ),
-                if (_errorMessage.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _errorMessage,
+                obscureText: !userProvider.isPasswordVisible,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24.0),
+              if (userProvider.errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    userProvider.errorMessage,
                     style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
                   ),
-                ],
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator()
-                      : const Text('LOGIN', style: TextStyle(fontSize: 16)),
                 ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SignupScreen()),
-                    );
-                  },
-                  child: const Text('Don\'t have an account? Sign Up'),
-                ),
-              ],
-            ),
+              ElevatedButton(
+                onPressed: userProvider.isLoading
+                    ? null
+                    : () async {
+                        if (_formKey.currentState!.validate()) {
+                          final success = await userProvider.login(
+                            _emailController.text,
+                            _passwordController.text,
+                            context,
+                          );
+                          
+                          if (success && mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileScreen(),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: userProvider.isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Login'),
+              ),
+              const SizedBox(height: 16.0),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SignupScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Don\'t have an account? Register'),
+              ),
+            ],
           ),
         ),
       ),

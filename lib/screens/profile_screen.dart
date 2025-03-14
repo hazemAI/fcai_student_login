@@ -27,9 +27,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _gender;
   int? _level;
   bool _isEditing = false;
-  bool _isLoading = false;
-  String? _profilePhotoPath;
   XFile? _pickedImage;
+  File? _profileImage;
 
   @override
   void initState() {
@@ -46,30 +45,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _loadUserData() {
-    final user = Provider.of<UserProvider>(context, listen: false).currentUser;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final user = userProvider.currentUser;
     if (user != null) {
       _nameController.text = user.name;
       _emailController.text = user.email;
       _studentIdController.text = user.studentId;
       _gender = user.gender;
       _level = user.level;
-      _profilePhotoPath = user.profilePhoto;
+      
+      if (user.profilePhoto != null && user.profilePhoto!.isNotEmpty) {
+        _profileImage = File(user.profilePhoto!);
+      }
     }
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      userProvider.setLoading(true);
 
       // Use platform-specific image picker
       final pickedFile = await PlatformUtils.pickImage(source);
 
       if (pickedFile != null) {
-        setState(() {
-          _pickedImage = pickedFile;
-        });
+        _pickedImage = pickedFile;
 
         // Save the image to app storage for persistence
         final savedImagePath = await PlatformUtils.saveImageToAppStorage(
@@ -78,15 +78,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final normalizedPath = PlatformUtils.normalizePath(savedImagePath);
 
         // Update the user profile with the saved image path
-        final success = await Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).updateProfilePhoto(normalizedPath);
+        final success = await userProvider.updateProfilePhoto(normalizedPath);
 
         if (success) {
-          setState(() {
-            _profilePhotoPath = normalizedPath;
-          });
+          _profileImage = File(normalizedPath);
 
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -114,9 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      userProvider.setLoading(false);
     }
   }
 
@@ -198,13 +191,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      userProvider.setLoading(true);
 
       try {
-        final currentUser =
-            Provider.of<UserProvider>(context, listen: false).currentUser;
+        final currentUser = userProvider.currentUser;
         if (currentUser != null) {
           final updatedUser = User(
             id: currentUser.id,
@@ -214,18 +205,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             studentId: _studentIdController.text,
             level: _level,
             password: currentUser.password,
-            profilePhoto: _profilePhotoPath,
+            profilePhoto: currentUser.profilePhoto,
           );
 
-          final success = await Provider.of<UserProvider>(
-            context,
-            listen: false,
-          ).updateProfile(updatedUser);
+          final success = await userProvider.updateProfile(updatedUser);
 
           if (success) {
-            setState(() {
-              _isEditing = false;
-            });
+            _isEditing = false;
 
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
@@ -245,13 +231,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
         }
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        userProvider.setLoading(false);
       }
     }
   }
@@ -271,22 +256,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: Colors.grey[300],
           backgroundImage: FileImage(File(_pickedImage!.path)),
         );
-      } else if (_profilePhotoPath != null && _profilePhotoPath!.isNotEmpty) {
-        final file = File(_profilePhotoPath!);
-        if (file.existsSync()) {
-          return CircleAvatar(
-            radius: 60,
-            backgroundColor: Colors.grey[300],
-            backgroundImage: FileImage(file),
-          );
-        } else {
-          // Fallback if file doesn't exist
-          return CircleAvatar(
-            radius: 60,
-            backgroundColor: Colors.grey[300],
-            child: const Icon(Icons.person, size: 60, color: Colors.grey),
-          );
-        }
+      } else if (_profileImage != null) {
+        return CircleAvatar(
+          radius: 60,
+          backgroundColor: Colors.grey[300],
+          backgroundImage: FileImage(_profileImage!),
+        );
       } else {
         return CircleAvatar(
           radius: 60,
@@ -306,184 +281,203 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserProvider>(context).currentUser;
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        final user = userProvider.currentUser;
+        final isLoading = userProvider.isLoading;
+        
+        if (user == null) {
+          return const Scaffold(body: Center(child: Text('No user logged in')));
+        }
 
-    if (user == null) {
-      return const Scaffold(body: Center(child: Text('No user logged in')));
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _isLoading ? null : _updateProfile,
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                });
-              },
-            ),
-          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: _isEditing ? _showImageSourceDialog : null,
-                child: Stack(
-                  children: [
-                    _buildProfileImage(),
-                    if (_isEditing)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+        // If user data changed, update the controllers
+        if (!_isEditing) {
+          _nameController.text = user.name;
+          _emailController.text = user.email;
+          _studentIdController.text = user.studentId;
+          _gender = user.gender;
+          _level = user.level;
+          
+          if (user.profilePhoto != null && user.profilePhoto!.isNotEmpty) {
+            _profileImage = File(user.profilePhoto!);
+          }
+        }
+        
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Profile'),
+            actions: [
+              IconButton(
+                icon: Icon(_isEditing ? Icons.save : Icons.edit),
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        if (_isEditing) {
+                          _updateProfile();
+                        } else {
+                          // Just toggle editing mode
+                          _isEditing = !_isEditing;
+                          // Force rebuild
+                          userProvider.notifyListeners();
+                        }
+                      },
               ),
-              const SizedBox(height: 24),
-
-              // Name field
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
-                ),
-                enabled: _isEditing,
-                validator: Validators.validateName,
-              ),
-              const SizedBox(height: 16),
-
-              // Gender selection
-              if (_isEditing) ...[
-                const Text('Gender (Optional)', style: TextStyle(fontSize: 16)),
-                Row(
-                  children: [
-                    Expanded(
-                      child: RadioListTile<String>(
-                        title: const Text('Male'),
-                        value: 'Male',
-                        groupValue: _gender,
-                        onChanged: (value) {
-                          setState(() {
-                            _gender = value;
-                          });
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: RadioListTile<String>(
-                        title: const Text('Female'),
-                        value: 'Female',
-                        groupValue: _gender,
-                        onChanged: (value) {
-                          setState(() {
-                            _gender = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                ListTile(
-                  title: const Text('Gender'),
-                  subtitle: Text(_gender ?? 'Not specified'),
-                  leading: const Icon(Icons.person_outline),
-                ),
-              ],
-              const SizedBox(height: 16),
-
-              // Email field (read-only)
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
-                ),
-                enabled: false, // Email cannot be changed
-              ),
-              const SizedBox(height: 16),
-
-              // Student ID field (read-only)
-              TextFormField(
-                controller: _studentIdController,
-                decoration: const InputDecoration(
-                  labelText: 'Student ID',
-                  prefixIcon: Icon(Icons.badge),
-                  border: OutlineInputBorder(),
-                ),
-                enabled: false, // Student ID cannot be changed
-              ),
-              const SizedBox(height: 16),
-
-              // Level selection
-              if (_isEditing) ...[
-                DropdownButtonFormField<int>(
-                  decoration: const InputDecoration(
-                    labelText: 'Level (Optional)',
-                    prefixIcon: Icon(Icons.school),
-                    border: OutlineInputBorder(),
-                  ),
-                  value: _level,
-                  items:
-                      [1, 2, 3, 4].map((level) {
-                        return DropdownMenuItem<int>(
-                          value: level,
-                          child: Text('Level $level'),
-                        );
-                      }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _level = value;
-                    });
-                  },
-                ),
-              ] else ...[
-                ListTile(
-                  title: const Text('Level'),
-                  subtitle: Text(
-                    _level != null ? 'Level $_level' : 'Not specified',
-                  ),
-                  leading: const Icon(Icons.school),
-                ),
-              ],
-
-              if (_isLoading) ...[
-                const SizedBox(height: 24),
-                const CircularProgressIndicator(),
-              ],
+              IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
             ],
           ),
-        ),
-      ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: _isEditing ? _showImageSourceDialog : null,
+                    child: Stack(
+                      children: [
+                        _buildProfileImage(),
+                        if (_isEditing)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Name field
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      prefixIcon: Icon(Icons.person),
+                      border: OutlineInputBorder(),
+                    ),
+                    enabled: _isEditing,
+                    validator: Validators.validateName,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Gender selection
+                  if (_isEditing) ...[
+                    const Text('Gender (Optional)', style: TextStyle(fontSize: 16)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: const Text('Male'),
+                            value: 'Male',
+                            groupValue: _gender,
+                            onChanged: (value) {
+                              _gender = value;
+                              // Force rebuild
+                              userProvider.notifyListeners();
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: const Text('Female'),
+                            value: 'Female',
+                            groupValue: _gender,
+                            onChanged: (value) {
+                              _gender = value;
+                              // Force rebuild
+                              userProvider.notifyListeners();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    ListTile(
+                      title: const Text('Gender'),
+                      subtitle: Text(_gender ?? 'Not specified'),
+                      leading: const Icon(Icons.person_outline),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+
+                  // Email field (read-only)
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(Icons.email),
+                      border: OutlineInputBorder(),
+                    ),
+                    enabled: false, // Email cannot be changed
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Student ID field (read-only)
+                  TextFormField(
+                    controller: _studentIdController,
+                    decoration: const InputDecoration(
+                      labelText: 'Student ID',
+                      prefixIcon: Icon(Icons.badge),
+                      border: OutlineInputBorder(),
+                    ),
+                    enabled: false, // Student ID cannot be changed
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Level selection
+                  if (_isEditing) ...[
+                    DropdownButtonFormField<int>(
+                      decoration: const InputDecoration(
+                        labelText: 'Level (Optional)',
+                        prefixIcon: Icon(Icons.school),
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _level,
+                      items:
+                          [1, 2, 3, 4].map((level) {
+                            return DropdownMenuItem<int>(
+                              value: level,
+                              child: Text('Level $level'),
+                            );
+                          }).toList(),
+                      onChanged: (value) {
+                        _level = value;
+                        // Force rebuild
+                        userProvider.notifyListeners();
+                      },
+                    ),
+                  ] else ...[
+                    ListTile(
+                      title: const Text('Level'),
+                      subtitle: Text(
+                        _level != null ? 'Level $_level' : 'Not specified',
+                      ),
+                      leading: const Icon(Icons.school),
+                    ),
+                  ],
+
+                  if (isLoading) ...[
+                    const SizedBox(height: 24),
+                    const CircularProgressIndicator(),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

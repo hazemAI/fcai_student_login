@@ -3,40 +3,53 @@ import 'package:email_validator/email_validator.dart';
 class Validators {
   static String? validateName(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Name is required';
+      return 'Please enter your name';
+    }
+    if (value.length < 3) {
+      return 'Name must be at least 3 characters';
     }
     return null;
   }
 
   static String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Email is required';
+      return 'Please enter your email';
     }
     
-    if (!EmailValidator.validate(value)) {
-      return 'Please enter a valid email';
-    }
-    
-    // FCI Email validation (studentID@stud.fci-cu.edu.eg)
-    final RegExp fciEmailRegex = RegExp(r'^[a-zA-Z0-9]+@stud\.fci-cu\.edu\.eg$');
+    // FCI Email structure validation (studentID@stud.fci-cu.edu.eg)
+    final fciEmailRegex = RegExp(r'^[0-9]+@stud\.fci-cu\.edu\.eg$');
     if (!fciEmailRegex.hasMatch(value)) {
-      return 'Email must follow the format: studentID@stud.fci-cu.edu.eg';
+      return 'Please enter a valid FCI email (studentID@stud.fci-cu.edu.eg)';
     }
     
     return null;
   }
 
-  static String? validateStudentId(String? value, String? email) {
+  static String? validateStudentId(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Student ID is required';
+      return 'Please enter your student ID';
+    }
+    if (!RegExp(r'^\d+$').hasMatch(value)) {
+      return 'Student ID must contain only numbers';
+    }
+    return null;
+  }
+
+  static String? validateStudentIdWithEmail(String? studentId, String? email) {
+    if (studentId == null || email == null || studentId.isEmpty || email.isEmpty) {
+      return 'Both student ID and email are required';
     }
     
-    // Check if student ID matches the one in email
-    if (email != null && email.isNotEmpty) {
-      final emailParts = email.split('@');
-      if (emailParts.length > 1 && emailParts[0] != value) {
-        return 'Student ID must match the ID in your email';
-      }
+    // Extract student ID from email
+    final emailParts = email.split('@');
+    if (emailParts.length != 2) {
+      return 'Invalid email format';
+    }
+    
+    final emailStudentId = emailParts[0];
+    
+    if (studentId != emailStudentId) {
+      return 'Student ID must match the ID in your email';
     }
     
     return null;
@@ -44,14 +57,14 @@ class Validators {
 
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Password is required';
+      return 'Please enter a password';
     }
-    
     if (value.length < 8) {
       return 'Password must be at least 8 characters';
     }
     
-    if (!value.contains(RegExp(r'[0-9]'))) {
+    // Check for at least 1 number
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
       return 'Password must contain at least 1 number';
     }
     
@@ -61,6 +74,10 @@ class Validators {
   static String? validateConfirmPassword(String? value, String? password) {
     if (value == null || value.isEmpty) {
       return 'Confirm password is required';
+    }
+    
+    if (value.length < 8) {
+      return 'Confirm password must be at least 8 characters';
     }
     
     if (value != password) {

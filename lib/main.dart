@@ -14,7 +14,12 @@ void main() async {
     // Initialize the database
     await DatabaseHelper().initDatabase();
 
-    runApp(const MainApp());
+    runApp(
+      ChangeNotifierProvider(
+        create: (context) => UserProvider(),
+        child: const MainApp(),
+      ),
+    );
   } else {
     // Run a simplified app for unsupported platforms
     runApp(const UnsupportedPlatformApp());
