@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../database/database_helper.dart';
+import 'dart:io';
 
 class UserProvider with ChangeNotifier {
   User? _currentUser;
@@ -12,6 +13,8 @@ class UserProvider with ChangeNotifier {
   bool _isConfirmPasswordVisible = false;
   String? _gender;
   int? _level;
+  File? _profileImageFile;
+  String? _profileImagePath;
 
   // Getters
   User? get currentUser => _currentUser;
@@ -21,6 +24,8 @@ class UserProvider with ChangeNotifier {
   bool get isConfirmPasswordVisible => _isConfirmPasswordVisible;
   String? get gender => _gender;
   int? get level => _level;
+  File? get profileImageFile => _profileImageFile;
+  String? get profileImagePath => _profileImagePath;
 
   // Setters
   void setLoading(bool loading) {
@@ -50,6 +55,12 @@ class UserProvider with ChangeNotifier {
 
   void toggleConfirmPasswordVisibility() {
     _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+    notifyListeners();
+  }
+
+  void setProfileImage(File imageFile, String path) {
+    _profileImageFile = imageFile;
+    _profileImagePath = path;
     notifyListeners();
   }
 
@@ -146,10 +157,15 @@ class UserProvider with ChangeNotifier {
         };
       }
 
+      // Create a user with the profile image path if available
+      final userWithImage = _profileImagePath != null 
+          ? user.copyWith(profilePhoto: _profileImagePath)
+          : user;
+
       // Insert user
-      final id = await _databaseHelper.insertUser(user);
+      final id = await _databaseHelper.insertUser(userWithImage);
       if (id > 0) {
-        _currentUser = user.copyWith(id: id);
+        _currentUser = userWithImage.copyWith(id: id);
         notifyListeners();
         return {
           'success': true,
@@ -227,6 +243,8 @@ class UserProvider with ChangeNotifier {
     _gender = null;
     _level = null;
     _errorMessage = '';
+    _profileImageFile = null;
+    _profileImagePath = null;
     notifyListeners();
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:fcai_student_login/screens/login_screen.dart';
 import 'package:fcai_student_login/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../providers/user_provider.dart';
 import '../utils/validators.dart';
+import '../utils/image_utils.dart';
 import '../components/index.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -42,6 +44,15 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  void _pickImage(UserProvider userProvider) {
+    ImageUtils.showImageSourceDialog(
+      context,
+      (File imageFile, String path) {
+        userProvider.setProfileImage(imageFile, path);
+      },
+    );
+  }
+
   Future<void> _signup(UserProvider userProvider) async {
     // Validate student ID matches email before form validation
     final studentIdEmailMatch = userProvider.validateStudentIdWithEmail(
@@ -65,6 +76,7 @@ class _SignupScreenState extends State<SignupScreen> {
           studentId: _studentIdController.text,
           gender: userProvider.gender,
           level: userProvider.level,
+          profilePhoto: userProvider.profileImagePath,
         );
 
         // Call signup method from provider with validation
@@ -121,6 +133,27 @@ class _SignupScreenState extends State<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Profile Image Picker
+                  Center(
+                    child: Column(
+                      children: [
+                        CustomImagePicker(
+                          imageFile: userProvider.profileImageFile,
+                          onTap: () => _pickImage(userProvider),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Profile Photo (Optional)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24.0),
+
                   CustomTextFormField(
                     controller: _nameController,
                     labelText: 'Full Name',

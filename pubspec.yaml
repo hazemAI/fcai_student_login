@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   path: ^1.8.3
+  uuid:
   path_provider: ^2.1.1
   provider: ^6.0.5
   email_validator: ^2.1.17
