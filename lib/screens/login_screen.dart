@@ -36,11 +36,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('FCAI Student Login'),
-      ),
+      appBar: AppBar(title: const Text('FCAI Student Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -60,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: 16.0),
-              
+
               CustomPasswordField(
                 controller: _passwordController,
                 labelText: 'Password',
@@ -74,10 +72,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: 24.0),
-              
+
               if (userProvider.errorMessage.isNotEmpty)
                 ErrorText(errorMessage: userProvider.errorMessage),
-              
+
               CustomButton(
                 width: double.infinity,
                 text: 'Login',
@@ -88,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       _passwordController.text,
                       context,
                     );
-                    
+
                     if (success && mounted) {
                       Navigator.pushReplacement(
                         context,
@@ -101,9 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 isLoading: userProvider.isLoading,
               ),
-              
+
               const SizedBox(height: 16.0),
-              
+
               TextButton(
                 onPressed: () {
                   Navigator.pushReplacement(
