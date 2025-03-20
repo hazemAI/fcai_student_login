@@ -1,4 +1,3 @@
-import 'package:email_validator/email_validator.dart';
 
 class Validators {
   static String? validateName(String? value) {

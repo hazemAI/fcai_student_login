@@ -63,8 +63,9 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           useMaterial3: true,
+          scaffoldBackgroundColor: Colors.white,
           colorScheme: ColorScheme.fromSeed(
-            seedColor : Colors.green,
+            seedColor: Colors.green,
           ),
           platform:
               Platform.isWindows

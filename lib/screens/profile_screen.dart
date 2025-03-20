@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:fcai_student_login/components/custom_text_form_field.dart';
+import 'package:fcai_student_login/components/error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _studentIdController.text = user.studentId;
       _gender = user.gender;
       _level = user.level;
-      
+
       if (user.profilePhoto != null && user.profilePhoto!.isNotEmpty) {
         _profileImage = File(user.profilePhoto!);
       }
@@ -187,8 +189,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _updateProfile() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final studentIdEmailMatch = userProvider.validateStudentIdWithEmail(
+      _studentIdController.text,
+      _emailController.text,
+    );
+
+    if (studentIdEmailMatch != null) {
+      userProvider.setErrorMessage(studentIdEmailMatch);
+      return;
+    }
+    userProvider.setErrorMessage('');
     if (_formKey.currentState!.validate()) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
       userProvider.setLoading(true);
 
       try {
@@ -282,7 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, userProvider, child) {
         final user = userProvider.currentUser;
         final isLoading = userProvider.isLoading;
-        
+
         if (user == null) {
           return const Scaffold(body: Center(child: Text('No user logged in')));
         }
@@ -294,33 +306,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _studentIdController.text = user.studentId;
           _gender = user.gender;
           _level = user.level;
-          
+
           if (user.profilePhoto != null && user.profilePhoto!.isNotEmpty) {
             _profileImage = File(user.profilePhoto!);
           }
         }
-        
+
         return Scaffold(
           appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
             title: const Text('Profile'),
             actions: [
               IconButton(
                 icon: Icon(_isEditing ? Icons.save : Icons.edit),
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        if (_isEditing) {
-                          _updateProfile();
-                        } else {
-                          // Just toggle editing mode
-                          _isEditing = !_isEditing;
-                          // Force rebuild
-                          userProvider.notifyListeners();
-                        }
-                      },
+                onPressed:
+                    isLoading
+                        ? null
+                        : () {
+                          if (_isEditing) {
+                            _updateProfile();
+                          } else {
+                            // Just toggle editing mode
+                            _isEditing = !_isEditing;
+                            // Force rebuild
+                            userProvider.notifyListeners();
+                          }
+                        },
               ),
               IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
             ],
+            bottom: PreferredSize(
+              preferredSize: Size(double.infinity, 4),
+              child:
+                  isLoading
+                      ? const LinearProgressIndicator()
+                      : const SizedBox.shrink(),
+            ),
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -356,22 +378,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Name field
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
-                    ),
-                    enabled: _isEditing,
-                    validator: Validators.validateName,
-                  ),
+                  (_isEditing)
+                      ? TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          prefixIcon: Icon(Icons.person),
+                          border: OutlineInputBorder(),
+                        ),
+                        enabled: _isEditing,
+                        validator: Validators.validateName,
+                      )
+                      : ListTile(
+                        title: Text(_nameController.text),
+                        leading: const Icon(Icons.person),
+                      ),
                   const SizedBox(height: 16),
 
                   // Gender selection
                   if (_isEditing) ...[
-                    const Text('Gender (Optional)', style: TextStyle(fontSize: 16)),
+                    const Text(
+                      'Gender (Optional)',
+                      style: TextStyle(fontSize: 16),
+                    ),
                     Row(
                       children: [
                         Expanded(
@@ -410,27 +439,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 16),
 
                   // Email field (read-only)
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(),
-                    ),
-                    enabled: false, // Email cannot be changed
-                  ),
+                  (_isEditing)
+                      ? CustomTextFormField(
+                        controller: _emailController,
+                        labelText: 'Email',
+                        prefixIcon: Icons.email,
+                        hintText: 'studentID@stud.fci-cu.edu.eg',
+                        helperText: 'Student ID must match the part before @',
+                        validator: Validators.validateEmail,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                      )
+                      : ListTile(
+                        title: Text(_emailController.text),
+                        leading: const Icon(Icons.email),
+                      ),
+
                   const SizedBox(height: 16),
 
-                  // Student ID field (read-only)
-                  TextFormField(
-                    controller: _studentIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Student ID',
-                      prefixIcon: Icon(Icons.badge),
-                      border: OutlineInputBorder(),
-                    ),
-                    enabled: false, // Student ID cannot be changed
-                  ),
+                  (_isEditing)
+                      ? CustomTextFormField(
+                        controller: _studentIdController,
+                        labelText: 'Student ID',
+                        prefixIcon: Icons.badge,
+                        hintText: 'Must match ID in email',
+                        helperText:
+                            'Must match the part before @ in your email',
+                        validator: Validators.validateStudentId,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                      )
+                      : ListTile(
+                        title: Text(_studentIdController.text),
+                        leading: const Icon(Icons.badge),
+                      ),
                   const SizedBox(height: 16),
 
                   // Level selection
@@ -465,10 +507,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
 
-                  if (isLoading) ...[
-                    const SizedBox(height: 24),
-                    const CircularProgressIndicator(),
-                  ],
+                  const SizedBox(height: 24.0),
+
+                  if (userProvider.errorMessage.isNotEmpty)
+                    ErrorText(errorMessage: userProvider.errorMessage),
+                  const SizedBox(height: 24.0),
                 ],
               ),
             ),
