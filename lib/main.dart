@@ -61,11 +61,16 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       child: MaterialApp(
         title: 'Student App',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+          ),
+          primarySwatch:Colors.green,
           useMaterial3: true,
           scaffoldBackgroundColor: Colors.white,
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.green,
+            primary: Colors.green,
           ),
           platform:
               Platform.isWindows
