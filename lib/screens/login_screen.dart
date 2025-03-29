@@ -1,3 +1,4 @@
+import 'package:fcai_student_login/screens/home_screen.dart';
 import 'package:fcai_student_login/screens/profile_screen.dart';
 import 'package:fcai_student_login/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
@@ -91,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
+                          builder: (context) => const HomeScreen(),
                         ),
                       );
                     }

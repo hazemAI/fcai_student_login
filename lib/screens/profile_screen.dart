@@ -251,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _logout() {
-    Provider.of<UserProvider>(context, listen: false).logout();
+    Provider.of<UserProvider>(context, listen: false).logout(context);
     Navigator.of(
       context,
     ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));

@@ -1,12 +1,13 @@
-import 'package:flutter/foundation.dart';
+import 'package:fcai_student_login/providers/store_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../database/database_helper.dart';
 import 'dart:io';
 
 class UserProvider with ChangeNotifier {
+  String emailLogin;
   User? _currentUser;
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
   bool _isLoading = false;
   String _errorMessage = '';
   bool _isPasswordVisible = false;
@@ -26,6 +27,25 @@ class UserProvider with ChangeNotifier {
   int? get level => _level;
   File? get profileImageFile => _profileImageFile;
   String? get profileImagePath => _profileImagePath;
+
+  UserProvider(this.emailLogin);
+
+  Future<void> defineUser() async {
+    setLoading(true);
+    try {
+      if (emailLogin.isNotEmpty) {
+        _currentUser = await DatabaseHelper.getUserByEmail(emailLogin);
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  bool isAuthenticated() {
+    return emailLogin.isNotEmpty;
+  }
 
   // Setters
   void setLoading(bool loading) {
@@ -69,31 +89,40 @@ class UserProvider with ChangeNotifier {
     if (studentId.isEmpty || email.isEmpty) {
       return 'Both student ID and email are required';
     }
-    
+
     // Extract student ID from email (part before @)
     final emailParts = email.split('@');
     if (emailParts.length != 2) {
       return 'Invalid email format';
     }
-    
+
     final emailStudentId = emailParts[0];
-    
+
     if (studentId != emailStudentId) {
       return 'Student ID must match the ID in your email (part before @)';
     }
-    
+
     return null;
   }
 
   // Login function
-  Future<bool> login(String email, String password, BuildContext context) async {
+  Future<bool> login(
+    String email,
+    String password,
+    BuildContext context,
+  ) async {
     setLoading(true);
     setErrorMessage('');
-    
+
     try {
-      final user = await _databaseHelper.loginUser(email, password);
+      final user = await DatabaseHelper.loginUser(email, password);
       if (user != null) {
         _currentUser = user;
+        DatabaseHelper.setLoggedIn(email);
+        emailLogin = email;
+        var storeProvider = context.read<StoreProvider>();
+        await storeProvider.loadFavorites(context);
+        await storeProvider.refreshLocation();
         setLoading(false);
         notifyListeners();
         return true;
@@ -103,6 +132,7 @@ class UserProvider with ChangeNotifier {
         return false;
       }
     } catch (e) {
+      DatabaseHelper.setLoggedOut();
       setErrorMessage('An error occurred: ${e.toString()}');
       setLoading(false);
       return false;
@@ -118,73 +148,66 @@ class UserProvider with ChangeNotifier {
   ) async {
     // Validate student ID matches email
     final studentIdEmailMatch = validateStudentIdWithEmail(studentId, email);
-    
+
     if (studentIdEmailMatch != null) {
       setErrorMessage(studentIdEmailMatch);
-      return {
-        'success': false,
-        'message': studentIdEmailMatch,
-      };
+      return {'success': false, 'message': studentIdEmailMatch};
     }
-    
+
     setErrorMessage('');
-    return await signup(user);
+    return await signup(user, context);
   }
 
   // Original signup function
-  Future<Map<String, dynamic>> signup(User user) async {
+  Future<Map<String, dynamic>> signup(User user, BuildContext context) async {
     try {
       setLoading(true);
       setErrorMessage(''); // Clear previous error messages
-      
+
       // Check if email already exists
-      final existingUserByEmail = await _databaseHelper.getUserByEmail(user.email);
+      final existingUserByEmail = await DatabaseHelper.getUserByEmail(
+        user.email,
+      );
       if (existingUserByEmail != null) {
         setErrorMessage('Email already exists');
-        return {
-          'success': false,
-          'message': 'Email already exists',
-        };
+        return {'success': false, 'message': 'Email already exists'};
       }
 
       // Check if student ID already exists
-      final existingUserByStudentId = await _databaseHelper.getUserByStudentId(user.studentId);
+      final existingUserByStudentId = await DatabaseHelper.getUserByStudentId(
+        user.studentId,
+      );
       if (existingUserByStudentId != null) {
         setErrorMessage('Student ID already exists');
-        return {
-          'success': false,
-          'message': 'Student ID already exists',
-        };
+        return {'success': false, 'message': 'Student ID already exists'};
       }
 
       // Create a user with the profile image path if available
-      final userWithImage = _profileImagePath != null 
-          ? user.copyWith(profilePhoto: _profileImagePath)
-          : user;
+      final userWithImage =
+          _profileImagePath != null
+              ? user.copyWith(profilePhoto: _profileImagePath)
+              : user;
 
       // Insert user
-      final id = await _databaseHelper.insertUser(userWithImage);
+      final id = await DatabaseHelper.insertUser(userWithImage);
       if (id > 0) {
         _currentUser = userWithImage.copyWith(id: id);
+        DatabaseHelper.setLoggedIn(user.email);
+        emailLogin = user.email;
+        var storeProvider = context.read<StoreProvider>();
+        await storeProvider.loadFavorites(context);
+        await storeProvider.refreshLocation();
         notifyListeners();
-        return {
-          'success': true,
-          'message': 'Signup successful',
-        };
+        return {'success': true, 'message': 'Signup successful'};
       } else {
         setErrorMessage('Failed to create account');
-        return {
-          'success': false,
-          'message': 'Failed to create account',
-        };
+        return {'success': false, 'message': 'Failed to create account'};
       }
     } catch (e) {
       print("Signup error: $e");
       setErrorMessage('An error occurred: $e');
-      return {
-        'success': false,
-        'message': 'An error occurred: $e',
-      };
+      DatabaseHelper.setLoggedOut();
+      return {'success': false, 'message': 'An error occurred: $e'};
     } finally {
       setLoading(false);
     }
@@ -195,10 +218,10 @@ class UserProvider with ChangeNotifier {
       if (_currentUser == null || _currentUser!.id == null) {
         return false;
       }
-      
+
       final user = updatedUser.copyWith(id: _currentUser!.id);
-      final result = await _databaseHelper.updateUser(user);
-      
+      final result = await DatabaseHelper.updateUser(user);
+
       if (result > 0) {
         _currentUser = user;
         notifyListeners();
@@ -216,9 +239,12 @@ class UserProvider with ChangeNotifier {
       if (_currentUser == null || _currentUser!.id == null) {
         return false;
       }
-      
-      final result = await _databaseHelper.updateUserProfilePhoto(_currentUser!.id!, photoPath);
-      
+
+      final result = await DatabaseHelper.updateUserProfilePhoto(
+        _currentUser!.id!,
+        photoPath,
+      );
+
       if (result > 0) {
         _currentUser = _currentUser!.copyWith(profilePhoto: photoPath);
         notifyListeners();
@@ -231,8 +257,10 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  void logout() {
+  void logout(BuildContext context) {
     _currentUser = null;
+    DatabaseHelper.setLoggedOut();
+    context.read<StoreProvider>().refresh();
     notifyListeners();
   }
 
