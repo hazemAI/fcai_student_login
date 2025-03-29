@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:fcai_student_login/screens/home_screen.dart';
 import 'package:fcai_student_login/screens/login_screen.dart';
 import 'package:fcai_student_login/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -93,7 +94,7 @@ class _SignupScreenState extends State<SignupScreen> {
           // Navigate to profile screen on success
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
           // Show a snackbar for immediate feedback

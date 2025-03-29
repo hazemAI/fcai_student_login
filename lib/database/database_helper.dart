@@ -17,7 +17,7 @@ class DatabaseHelper {
 
   DatabaseHelper._internal();
 
-  Future<void> initDatabase() async {
+  static Future<void> initDatabase() async {
     // Initialize Hive with platform-specific path
     if (Platform.isWindows) {
       final appDocDir = await getApplicationDocumentsDirectory();
@@ -44,7 +44,7 @@ class DatabaseHelper {
   }
 
   // Helper method to get the next user ID
-  int _getNextUserId() {
+  static int _getNextUserId() {
     final List<User> users =
         _userBox!.values
             .map((map) => User.fromMap(Map<String, dynamic>.from(map)))
@@ -58,7 +58,7 @@ class DatabaseHelper {
         1;
   }
 
-  Future<int> insertUser(User user) async {
+  static Future<int> insertUser(User user) async {
     // Check if email already exists
     final List<String> emails = List<String>.from(
       _metadataBox!.get(_emailsKey) ?? [],
@@ -91,7 +91,7 @@ class DatabaseHelper {
     return id;
   }
 
-  Future<User?> getUserByEmail(String email) async {
+  static Future<User?> getUserByEmail(String email) async {
     final userData = _userBox!.get(email);
     if (userData != null) {
       return User.fromMap(Map<String, dynamic>.from(userData));
@@ -99,7 +99,7 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<User?> getUserByStudentId(String studentId) async {
+  static Future<User?> getUserByStudentId(String studentId) async {
     final List<User> users =
         _userBox!.values
             .map((map) => User.fromMap(Map<String, dynamic>.from(map)))
@@ -113,7 +113,7 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<User?> loginUser(String email, String password) async {
+  static Future<User?> loginUser(String email, String password) async {
     final user = await getUserByEmail(email);
     if (user != null && user.password == password) {
       return user;
@@ -121,7 +121,20 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<int> updateUser(User user) async {
+  static Future<void> setLoggedIn(String email) async {
+    Hive.box('settings').put('isLoggedIn', email);
+  }
+
+  static Future<void> setLoggedOut() async {
+    Hive.box('settings').clear();
+  }
+
+  static Future<String> getLoggedIn() async {
+    await Hive.openBox('settings');
+    return Hive.box('settings').get('isLoggedIn') ?? '';
+  }
+
+  static Future<int> updateUser(User user) async {
     if (user.id == null) return 0;
 
     // Get the old user to check if email or studentId changed
@@ -134,7 +147,7 @@ class DatabaseHelper {
     return 1;
   }
 
-  Future<int> updateUserProfilePhoto(int id, String photoPath) async {
+  static Future<int> updateUserProfilePhoto(int id, String photoPath) async {
     // Find the user with the given ID
     final List<User> users =
         _userBox!.values
@@ -154,7 +167,7 @@ class DatabaseHelper {
   }
 
   // Method to close Hive boxes when app is closed
-  Future<void> closeDatabase() async {
+  static Future<void> closeDatabase() async {
     await _userBox?.close();
     await _metadataBox?.close();
   }
