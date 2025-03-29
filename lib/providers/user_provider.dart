@@ -120,7 +120,9 @@ class UserProvider with ChangeNotifier {
         _currentUser = user;
         DatabaseHelper.setLoggedIn(email);
         emailLogin = email;
-        await context.read<StoreProvider>().loadFavorites(context);
+        var storeProvider = context.read<StoreProvider>();
+        await storeProvider.loadFavorites(context);
+        await storeProvider.refreshLocation();
         setLoading(false);
         notifyListeners();
         return true;
@@ -192,7 +194,9 @@ class UserProvider with ChangeNotifier {
         _currentUser = userWithImage.copyWith(id: id);
         DatabaseHelper.setLoggedIn(user.email);
         emailLogin = user.email;
-        await context.read<StoreProvider>().loadFavorites(context);
+        var storeProvider = context.read<StoreProvider>();
+        await storeProvider.loadFavorites(context);
+        await storeProvider.refreshLocation();
         notifyListeners();
         return {'success': true, 'message': 'Signup successful'};
       } else {

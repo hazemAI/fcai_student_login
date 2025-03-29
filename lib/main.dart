@@ -73,35 +73,26 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserProvider>(
-      builder: (ctx, userProvider, _) {
-        if (userProvider.isLoading) {
-          return Center(child: CircularProgressIndicator());
-        }
-        return MaterialApp(
-          title: 'Student App',
-          theme: ThemeData(
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.transparent,
-            ),
-            primarySwatch: Colors.green,
-            useMaterial3: true,
-            scaffoldBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.green,
-              primary: Colors.green,
-            ),
-            platform:
-                Platform.isWindows
-                    ? TargetPlatform.windows
-                    : TargetPlatform.android,
-          ),
-          debugShowCheckedModeBanner: false,
-
-          home: SplashScreen(),
-        );
-      },
+    return MaterialApp(
+      title: 'Student App',
+      theme: ThemeData(
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+        ),
+        primarySwatch: Colors.green,
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          primary: Colors.green,
+        ),
+        platform:
+            Platform.isWindows
+                ? TargetPlatform.windows
+                : TargetPlatform.android,
+      ),
+      debugShowCheckedModeBanner: false,
+      home: SplashScreen(),
     );
   }
 }
