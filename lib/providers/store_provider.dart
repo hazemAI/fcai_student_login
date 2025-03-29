@@ -1,7 +1,10 @@
+import 'package:fcai_student_login/providers/user_provider.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import '../models/store.dart';
 
 class StoreProvider with ChangeNotifier {
@@ -12,25 +15,22 @@ class StoreProvider with ChangeNotifier {
 
   StoreProvider() {
     _initStores();
-    _loadFavorites();
-    _determinePosition();
   }
 
   List<Store> get stores => _stores;
-  List<Store> get favoriteStores => _stores.where((store) => _favoriteStoreIds.contains(store.id)).toList();
+  List<Store> get favoriteStores =>
+      _stores.where((store) => _favoriteStoreIds.contains(store.id)).toList();
   bool get isLoading => _isLoading;
   Position? get currentPosition => _currentPosition;
 
-  // Initialize default stores if none exist
   Future<void> _initStores() async {
     _isLoading = true;
     notifyListeners();
 
     try {
       var box = await Hive.openBox<Store>('stores');
-      
+
       if (box.isEmpty) {
-        // Add sample stores
         await box.addAll([
           Store(
             id: '1',
@@ -69,8 +69,9 @@ class StoreProvider with ChangeNotifier {
           ),
         ]);
       }
-      
+
       _stores = box.values.toList();
+      await refreshLocation();
     } catch (e) {
       print('Error initializing stores: $e');
     } finally {
@@ -79,69 +80,65 @@ class StoreProvider with ChangeNotifier {
     }
   }
 
-  // Load favorite stores from local storage
-  Future<void> _loadFavorites() async {
+  Future<void> loadFavorites(BuildContext context) async {
+    var userEmail = context.read<UserProvider>().emailLogin;
+    print(userEmail);
+
     try {
       var box = await Hive.openBox<List<dynamic>>('favorites');
-      List<dynamic>? favoriteIds = box.get('favoriteStoreIds');
-      
+      List<dynamic>? favoriteIds = box.get(userEmail);
+
       if (favoriteIds != null) {
         _favoriteStoreIds = favoriteIds.map((id) => id.toString()).toList();
+      } else {
+        _favoriteStoreIds = [];
       }
+
       notifyListeners();
     } catch (e) {
       print('Error loading favorites: $e');
     }
   }
 
-  // Toggle favorite status for a store
-  Future<void> toggleFavorite(String storeId) async {
+  Future<void> toggleFavorite(String storeId, BuildContext context) async {
+    var userEmail = context.read<UserProvider>().emailLogin;
+
     if (_favoriteStoreIds.contains(storeId)) {
       _favoriteStoreIds.remove(storeId);
     } else {
       _favoriteStoreIds.add(storeId);
     }
-    
+
     try {
       var box = await Hive.openBox<List<dynamic>>('favorites');
-      await box.put('favoriteStoreIds', _favoriteStoreIds);
+      await box.put(userEmail!, _favoriteStoreIds);
     } catch (e) {
       print('Error saving favorites: $e');
     }
-    
+
     notifyListeners();
   }
 
-  // Check if a store is in favorites
   bool isFavorite(String storeId) {
     return _favoriteStoreIds.contains(storeId);
   }
 
-  // Get current position
   Future<void> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
 
     try {
-      // Test if location services are enabled
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        return;
-      }
+      if (!serviceEnabled) return;
 
       permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return;
-        }
-      }
-      
-      if (permission == LocationPermission.deniedForever) {
-        return;
+        if (permission == LocationPermission.denied) return;
       }
 
-      // Get the current position
+      if (permission == LocationPermission.deniedForever) return;
+
       _currentPosition = await Geolocator.getCurrentPosition();
       notifyListeners();
     } catch (e) {
@@ -149,22 +146,26 @@ class StoreProvider with ChangeNotifier {
     }
   }
 
-  // Calculate distance between user and store
   double calculateDistance(Store store) {
-    if (_currentPosition == null) {
-      return -1; // Indicates that distance calculation is not available
-    }
-    
+    if (_currentPosition == null) return -1;
+
     return Geolocator.distanceBetween(
-      _currentPosition!.latitude,
-      _currentPosition!.longitude,
-      store.latitude,
-      store.longitude,
-    ) / 1000; // Convert to kilometers
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          store.latitude,
+          store.longitude,
+        ) /
+        1000;
   }
 
-  // Refresh location data
   Future<void> refreshLocation() async {
     await _determinePosition();
   }
-} 
+
+  void refresh(){
+    _favoriteStoreIds = [];
+    _isLoading = false;
+    _currentPosition = null;
+    notifyListeners();
+  }
+}

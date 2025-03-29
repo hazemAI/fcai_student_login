@@ -94,7 +94,7 @@ class FavoriteStoreItem extends StatelessWidget {
         );
       },
       onDismissed: (direction) {
-        Provider.of<StoreProvider>(context, listen: false).toggleFavorite(store.id);
+        Provider.of<StoreProvider>(context, listen: false).toggleFavorite(store.id, context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${store.name} removed from favorites'),
@@ -160,7 +160,7 @@ class FavoriteStoreItem extends StatelessWidget {
                   color: Colors.red,
                 ),
                 onPressed: () {
-                  Provider.of<StoreProvider>(context, listen: false).toggleFavorite(store.id);
+                  Provider.of<StoreProvider>(context, listen: false).toggleFavorite(store.id, context);
                 },
               ),
             ],

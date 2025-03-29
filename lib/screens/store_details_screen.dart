@@ -6,7 +6,7 @@ import '../models/store.dart';
 class StoreDetailsScreen extends StatelessWidget {
   final String storeId;
   
-  const StoreDetailsScreen({Key? key, required this.storeId}) : super(key: key);
+  const StoreDetailsScreen({super.key, required this.storeId});
 
   @override
   Widget build(BuildContext context) {
@@ -16,13 +16,6 @@ class StoreDetailsScreen extends StatelessWidget {
           (store) => store.id == storeId,
           orElse: () => null as Store, // This will throw if store not found
         );
-        
-        if (store == null) {
-          return Scaffold(
-            appBar: AppBar(title: Text('Store Details')),
-            body: Center(child: Text('Store not found')),
-          );
-        }
         
         double distance = storeProvider.calculateDistance(store);
         bool isFavorite = storeProvider.isFavorite(store.id);
@@ -37,7 +30,7 @@ class StoreDetailsScreen extends StatelessWidget {
                   color: isFavorite ? Colors.red : null,
                 ),
                 onPressed: () {
-                  storeProvider.toggleFavorite(store.id);
+                  storeProvider.toggleFavorite(store.id, context);
                 },
               ),
             ],
@@ -126,7 +119,7 @@ class StoreDetailsScreen extends StatelessWidget {
                           minimumSize: Size(double.infinity, 50),
                         ),
                         onPressed: () {
-                          storeProvider.toggleFavorite(store.id);
+                          storeProvider.toggleFavorite(store.id, context);
                         },
                       ),
                       SizedBox(height: 16),

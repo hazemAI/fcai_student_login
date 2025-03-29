@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fcai_student_login/providers/store_provider.dart';
 import 'package:fcai_student_login/providers/user_provider.dart';
 import 'package:fcai_student_login/screens/home_screen.dart';
 import 'package:fcai_student_login/screens/login_screen.dart';
@@ -21,6 +22,9 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(Duration(seconds: 1), () async {
       var userProvider = context.read<UserProvider>();
       await userProvider.defineUser();
+      if (context.mounted && userProvider.isAuthenticated()) {
+        await context.read<StoreProvider>().loadFavorites(context);
+      }
       if (context.mounted) {
         Navigator.pushReplacement(
           context,

@@ -126,7 +126,7 @@ class DatabaseHelper {
   }
 
   static Future<void> setLoggedOut() async {
-    Hive.box('settings').clear();
+    Hive.box('settings').put('isLoggedIn', '');
   }
 
   static Future<String> getLoggedIn() async {

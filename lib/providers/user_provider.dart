@@ -1,4 +1,6 @@
+import 'package:fcai_student_login/providers/store_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../database/database_helper.dart';
 import 'dart:io';
@@ -117,6 +119,8 @@ class UserProvider with ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         DatabaseHelper.setLoggedIn(email);
+        emailLogin = email;
+        await context.read<StoreProvider>().loadFavorites(context);
         setLoading(false);
         notifyListeners();
         return true;
@@ -149,11 +153,11 @@ class UserProvider with ChangeNotifier {
     }
 
     setErrorMessage('');
-    return await signup(user);
+    return await signup(user, context);
   }
 
   // Original signup function
-  Future<Map<String, dynamic>> signup(User user) async {
+  Future<Map<String, dynamic>> signup(User user, BuildContext context) async {
     try {
       setLoading(true);
       setErrorMessage(''); // Clear previous error messages
@@ -187,6 +191,8 @@ class UserProvider with ChangeNotifier {
       if (id > 0) {
         _currentUser = userWithImage.copyWith(id: id);
         DatabaseHelper.setLoggedIn(user.email);
+        emailLogin = user.email;
+        await context.read<StoreProvider>().loadFavorites(context);
         notifyListeners();
         return {'success': true, 'message': 'Signup successful'};
       } else {
@@ -247,9 +253,10 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  void logout() {
+  void logout(BuildContext context) {
     _currentUser = null;
     DatabaseHelper.setLoggedOut();
+    context.read<StoreProvider>().refresh();
     notifyListeners();
   }
 

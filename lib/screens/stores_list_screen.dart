@@ -10,19 +10,17 @@ class StoresListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('All Stores'),
-      ),
+      appBar: AppBar(title: Text('All Stores')),
       body: Consumer<StoreProvider>(
         builder: (ctx, storeProvider, child) {
           if (storeProvider.isLoading) {
             return Center(child: CircularProgressIndicator());
           }
-          
+
           if (storeProvider.stores.isEmpty) {
             return Center(child: Text('No stores available'));
           }
-          
+
           return ListView.builder(
             padding: EdgeInsets.all(16),
             itemCount: storeProvider.stores.length,
@@ -39,7 +37,7 @@ class StoresListScreen extends StatelessWidget {
 
 class StoreListItem extends StatelessWidget {
   final Store store;
-  
+
   const StoreListItem({super.key, required this.store});
 
   @override
@@ -86,7 +84,9 @@ class StoreListItem extends StatelessWidget {
                     SizedBox(height: 8),
                     Consumer<StoreProvider>(
                       builder: (ctx, storeProvider, child) {
-                        double distance = storeProvider.calculateDistance(store);
+                        double distance = storeProvider.calculateDistance(
+                          store,
+                        );
                         return distance >= 0
                             ? Text('${distance.toStringAsFixed(1)} km away')
                             : Text('Distance unavailable');
@@ -103,12 +103,11 @@ class StoreListItem extends StatelessWidget {
                     storeProvider.isFavorite(store.id)
                         ? Icons.favorite
                         : Icons.favorite_border,
-                    color: storeProvider.isFavorite(store.id)
-                        ? Colors.red
-                        : null,
+                    color:
+                        storeProvider.isFavorite(store.id) ? Colors.red : null,
                   ),
                   onPressed: () {
-                    storeProvider.toggleFavorite(store.id);
+                    storeProvider.toggleFavorite(store.id, context);
                   },
                 );
               },
@@ -118,4 +117,4 @@ class StoreListItem extends StatelessWidget {
       ),
     );
   }
-} 
+}
