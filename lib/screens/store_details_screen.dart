@@ -5,7 +5,7 @@ import '../models/store.dart';
 
 class StoreDetailsScreen extends StatelessWidget {
   final String storeId;
-  
+
   const StoreDetailsScreen({super.key, required this.storeId});
 
   @override
@@ -16,10 +16,10 @@ class StoreDetailsScreen extends StatelessWidget {
           (store) => store.id == storeId,
           orElse: () => null as Store, // This will throw if store not found
         );
-        
+
         double distance = storeProvider.calculateDistance(store);
         bool isFavorite = storeProvider.isFavorite(store.id);
-        
+
         return Scaffold(
           appBar: AppBar(
             title: Text(store.name),
@@ -61,44 +61,52 @@ class StoreDetailsScreen extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 16),
-                      Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Location Details',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                      InkWell(
+                        onTap: () {
+                          storeProvider.openGoogleMapWithDestination(
+                            store.latitude,
+                            store.longitude,
+                          );
+                        },
+                        child: Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Location Details',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(Icons.location_on, color: Colors.red),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    distance >= 0
-                                        ? '${distance.toStringAsFixed(1)} km away'
-                                        : 'Distance unavailable',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(Icons.map, color: Colors.blue),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Coordinates: ${store.latitude.toStringAsFixed(4)}, ${store.longitude.toStringAsFixed(4)}',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      distance >= 0
+                                          ? '${distance.toStringAsFixed(1)} km away'
+                                          : 'Distance unavailable',
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(Icons.map, color: Colors.blue),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Coordinates: ${store.latitude.toStringAsFixed(4)}, ${store.longitude.toStringAsFixed(4)}',
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -115,7 +123,8 @@ class StoreDetailsScreen extends StatelessWidget {
                           style: TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isFavorite ? Colors.red : Colors.blue,
+                          backgroundColor:
+                              isFavorite ? Colors.red : Colors.blue,
                           minimumSize: Size(double.infinity, 50),
                         ),
                         onPressed: () {
@@ -144,4 +153,4 @@ class StoreDetailsScreen extends StatelessWidget {
       },
     );
   }
-} 
+}

@@ -1,8 +1,8 @@
 import 'package:fcai_student_login/providers/user_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../models/store.dart';
@@ -111,7 +111,7 @@ class StoreProvider with ChangeNotifier {
 
     try {
       var box = await Hive.openBox<List<dynamic>>('favorites');
-      await box.put(userEmail!, _favoriteStoreIds);
+      await box.put(userEmail, _favoriteStoreIds);
     } catch (e) {
       print('Error saving favorites: $e');
     }
@@ -146,6 +146,22 @@ class StoreProvider with ChangeNotifier {
     }
   }
 
+  void openGoogleMapWithDestination(double lat, double lng) async {
+    try {
+      final Uri googleMapsUrl = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+      );
+
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch Google Maps.';
+      }
+    } catch (e) {
+      print('Error opening Google Maps: $e');
+    }
+  }
+
   double calculateDistance(Store store) {
     if (_currentPosition == null) return -1;
 
@@ -162,7 +178,7 @@ class StoreProvider with ChangeNotifier {
     await _determinePosition();
   }
 
-  void refresh(){
+  void refresh() {
     _favoriteStoreIds = [];
     _isLoading = false;
     _currentPosition = null;

@@ -20,6 +20,7 @@ dependencies:
   file_selector_windows: ^0.9.3
   file_selector: ^1.0.1
   geolocator: ^9.0.2
+  url_launcher:
 
 dev_dependencies:
   flutter_test:
