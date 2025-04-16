@@ -1,8 +1,8 @@
 import 'package:fcai_student_login/providers/user_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../models/store.dart';
@@ -34,38 +34,102 @@ class StoreProvider with ChangeNotifier {
         await box.addAll([
           Store(
             id: '1',
-            name: 'Grocery Store',
-            imageUrl: 'assets/images/grocery.jpg',
-            latitude: 37.7749,
-            longitude: -122.4194,
+            name: 'Dahab Market',
+            imageUrl: 'assets/images/dahab_market.jpg',
+            latitude: 31.2198264,
+            longitude: 30.0667105,
           ),
           Store(
             id: '2',
-            name: 'Electronics Shop',
-            imageUrl: 'assets/images/electronics.jpg',
-            latitude: 37.7833,
-            longitude: -122.4167,
+            name: 'BIM',
+            imageUrl: 'assets/images/bim.png',
+            latitude: 31.2240134,
+            longitude: 30.0118657,
           ),
           Store(
             id: '3',
-            name: 'Fashion Outlet',
-            imageUrl: 'assets/images/fashion.jpg',
-            latitude: 37.7694,
-            longitude: -122.4862,
+            name: 'Shea Egypt',
+            imageUrl: 'assets/images/shea_egypt.png',
+            latitude: 31.2222855,
+            longitude: 30.061007,
           ),
           Store(
             id: '4',
-            name: 'Bookstore',
-            imageUrl: 'assets/images/books.jpg',
-            latitude: 37.7841,
-            longitude: -122.4069,
+            name: 'Syrian Food Products',
+            imageUrl: 'assets/images/syrian_food_products.jpg',
+            latitude: 31.2205024,
+            longitude: 30.0639556,
           ),
           Store(
             id: '5',
-            name: 'Coffee Shop',
-            imageUrl: 'assets/images/coffee.jpg',
-            latitude: 37.7899,
-            longitude: -122.4000,
+            name: 'Moon Yard Mall',
+            imageUrl: 'assets/images/moon_yard_mall.png',
+            latitude: 31.6401449,
+            longitude: 30.1639161,
+          ),
+          Store(
+            id: '6',
+            name: 'Beta Bookshop',
+            imageUrl: 'assets/images/beta_bookshop.jpg',
+            latitude: 31.2633988,
+            longitude: 29.9536339,
+          ),
+          Store(
+            id: '7',
+            name: 'Butterfly',
+            imageUrl: 'assets/images/butterfly.png',
+            latitude: 31.2763169,
+            longitude: 29.9577477,
+          ),
+
+          Store(
+            id: '9',
+            name: 'Sindiana',
+            imageUrl: 'assets/images/sindiana.jpg',
+            latitude: 31.2688468,
+            longitude: 29.9508832,
+          ),
+
+          Store(
+            id: '10',
+            name:
+                "Theodor's - Antique, vintages, contemporary furniture and beautiful things",
+            imageUrl:
+                'assets/images/theodor_antique.jpg',
+            latitude: 31.2702669,
+            longitude: 29.9519826,
+          ),
+
+          Store(
+            id: '11',
+            name: 'Green House',
+            imageUrl: 'assets/images/green_house.jpg',
+            latitude: 31.2677628,
+            longitude: 29.9563596,
+          ),
+
+          Store(
+            id: '12',
+            name: 'Art\'s House For Antiques And Caucasian Carpets',
+            imageUrl:
+                'assets/images/art_house.jpg',
+            latitude: 31.2642814,
+            longitude: 29.952464,
+          ),
+
+          Store(
+            id: '13',
+            name: 'Elsayad Bakery',
+            imageUrl: 'assets/images/elsayad_bakery.jpg',
+            latitude: 31.2642341,
+            longitude: 29.9525363,
+          ),
+          Store(
+            id: '14',
+            name: 'Lady Land (Said Tailor)',
+            imageUrl: 'assets/images/lady_land.jpg',
+            latitude: 31.2643838,
+            longitude: 29.9524186,
           ),
         ]);
       }
@@ -111,7 +175,7 @@ class StoreProvider with ChangeNotifier {
 
     try {
       var box = await Hive.openBox<List<dynamic>>('favorites');
-      await box.put(userEmail!, _favoriteStoreIds);
+      await box.put(userEmail, _favoriteStoreIds);
     } catch (e) {
       print('Error saving favorites: $e');
     }
@@ -146,6 +210,22 @@ class StoreProvider with ChangeNotifier {
     }
   }
 
+  void openGoogleMapWithDestination(double lat, double lng) async {
+    try {
+      final Uri googleMapsUrl = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+      );
+
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch Google Maps.';
+      }
+    } catch (e) {
+      print('Error opening Google Maps: $e');
+    }
+  }
+
   double calculateDistance(Store store) {
     if (_currentPosition == null) return -1;
 
@@ -162,7 +242,7 @@ class StoreProvider with ChangeNotifier {
     await _determinePosition();
   }
 
-  void refresh(){
+  void refresh() {
     _favoriteStoreIds = [];
     _isLoading = false;
     _currentPosition = null;

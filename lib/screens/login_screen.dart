@@ -1,5 +1,4 @@
 import 'package:fcai_student_login/screens/home_screen.dart';
-import 'package:fcai_student_login/screens/profile_screen.dart';
 import 'package:fcai_student_login/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +6,7 @@ import 'package:fcai_student_login/providers/user_provider.dart';
 import '../components/index.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
