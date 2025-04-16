@@ -27,6 +27,10 @@ void main() async {
 
     // Register Hive adapters
     Hive.registerAdapter(StoreAdapter());
+    // delete boxesلهف 
+    // await Hive.deleteBoxFromDisk('stores');
+    // await Hive.deleteBoxFromDisk('favorites');
+
 
     runApp(
       MultiProvider(
